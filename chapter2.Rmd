@@ -1,0 +1,127 @@
+---
+title: 'Statistical Rethinking: A Bayesian Course with Examples in R and Stan'
+subtitle: 'Chapter 2: Small Worlds and Large Worlds'
+author: "Marwin Carmo"
+date: "06/01/2022"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include=FALSE}
+library(rethinking)
+```
+
+# Chapter 2 examples
+
+## 2.4.3. Grid approximation
+
+```{r grid approximation}
+# define grid 
+p_grid <- seq( from=0 , to=1 , length.out=20 )
+# define prior 
+prior <- rep( 1 , 20 )
+# compute likelihood at each value in grid 
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+# compute product of likelihood and prior 
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1 
+posterior <- unstd.posterior / sum(unstd.posterior)
+```
+
+```{r posterior plot}
+plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+```
+### Plots with different priors
+
+A step prior, assigning zero probability to all values less than 0.5, results in a truncated posterior
+
+```{r grid approx 2}
+# define grid 
+p_grid <- seq( from=0 , to=1 , length.out=20 )
+# define prior 
+prior <- ifelse( p_grid < 0.5 , 0 , 1 )
+# compute likelihood at each value in grid 
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+# compute product of likelihood and prior 
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1 
+posterior <- unstd.posterior / sum(unstd.posterior)
+# plot
+plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+```
+A peaked prior that shifts and skews the posterior, relative to the likelihood.
+
+```{r grid approx 3}
+# define grid 
+p_grid <- seq( from=0 , to=1 , length.out=20 )
+# define prior 
+prior <- exp( -5*abs( p_grid - 0.5 ) )
+# compute likelihood at each value in grid 
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+# compute product of likelihood and prior 
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1 
+posterior <- unstd.posterior / sum(unstd.posterior)
+# plot
+plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+```
+
+## 2.4.4. Quadratic approximation
+
+```{r quadratic approx 2.6}
+globe.qa <- quap( alist( W ~ dbinom( W+L ,p) , # binomial likelihood 
+                         p ~ dunif(0,1) # uniform prior
+) , data=list(W=6,L=3) )
+# display summary of quadratic approximation 
+precis( globe.qa )
+```
+
+Assuming the posterior is Gaussian, it is maximized at 0.67, and its standard deviation is 0.16.
+
+```{r quadratic approx 2.7}
+# analytical calculation 
+W <- 6
+L <- 3  
+curve( dbeta( x , W+1 , L+1 ) , from=0 , to=1 ) 
+# quadratic approximation 
+curve( dnorm( x , 0.67 , 0.16 ) , lty=2 , add=TRUE )
+```
+
+## 2.4.5. Markov chain Monte Carlo
+
+```{r mcmc 2.8}
+n_samples <- 1000 
+p <- rep( NA , n_samples ) 
+p[1] <- 0.5 
+W <- 6 
+L <- 3 
+for ( i in 2:n_samples ) { 
+  p_new <- rnorm( 1 , p[i-1] , 0.1 ) 
+  if ( p_new < 0 ) p_new <- abs( p_new ) 
+  if ( p_new > 1 ) p_new <- 2 - p_new 
+  q0 <- dbinom( W , W+L , p[i-1] ) 
+  q1 <- dbinom( W , W+L , p_new ) 
+  p[i] <- ifelse( runif(1) < q1/q0 , p_new , p[i-1] )
+}
+```
+
+```{r mcmc 2.9}
+dens( p , xlim=c(0,1) ) 
+curve( dbeta( x , W+1 , L+1 ) , lty=2 , add=TRUE )
+```
+
+# 2.6. Practice
+
+### 2E1
+
+The probability of rain on monday = Pr(rain|Monday)
