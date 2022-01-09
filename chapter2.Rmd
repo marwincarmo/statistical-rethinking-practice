@@ -134,3 +134,8 @@ Answers (2) and (4): The probability of rain on monday = Pr(rain|Monday) or Pr(r
 
 Answers (1) and (5): the probability that it is Monday, given that it is raining
 Pr(Monday|rain) = Pr(rain|Monday)Pr(Monday)/Pr(rain)
+
+## 2E4
+
+By stating that probability of water is 0.7 we're only making an informed guess about the true reality of nature. Probability does not exists because in the real world, things exist or they don't. The globe is covered by water in a "real" proportion but we can't know how much it is unless we measure all the land and all the water. Saying that 70% of the globe is water describes only our most plausible estimate given the data we have observed.
+

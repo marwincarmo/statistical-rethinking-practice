@@ -54,3 +54,7 @@ posterior <- unstd.posterior / sum(unstd.posterior)
 plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
 mtext( "50 points" )
 ```
+## 03
+
+For the posterior distribution from 2, compute 89% percentile and HPDI intervals. Compare the widths of these intervals. Which is wider? Why? If you had only the information in the interval, what might you misunderstand about the shape of the posterior distribution?
+
