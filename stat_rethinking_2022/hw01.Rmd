@@ -1,0 +1,56 @@
+---
+title: "Statistical Rethinking Winter 2022"
+subtitle: "Homework, week 1"
+author: "Marwin Carmo"
+date: "09/01/2022"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 01
+Suppose the globe tossing data (Chapter 2) had turned out to be 4 water and 11 land. Construct the posterior distribution, using grid approximation. Use the same flat prior as in the book.
+
+```{r ex01}
+# define grid 
+p_grid <- seq( from=0 , to=1 , length.out=50 )
+# define prior 
+prior <- rep( 1 , 50 )
+# compute likelihood at each value in grid 
+likelihood <- dbinom( 4 , size=15 , prob=p_grid )
+# compute product of likelihood and prior 
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1 
+posterior <- unstd.posterior / sum(unstd.posterior)
+```
+
+```{r posterior plot}
+plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
+mtext( "50 points" )
+```
+
+## 02
+
+Now suppose the data are 4 water and 2 land. Compute the posterior again, but this time use a prior that is zero below p = 0.5 and a constant above p = 0.5. This corresponds to prior information that a majority of the Earth’s surface is water.
+
+```{r ex02}
+# define grid 
+p_grid <- seq( from=0 , to=1 , length.out=50 )
+# define prior 
+prior <- ifelse(p_grid < 0.5, 0, 1)
+# compute likelihood at each value in grid 
+likelihood <- dbinom( 4 , size=6 , prob=p_grid )
+# compute product of likelihood and prior 
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1 
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+plot( p_grid , posterior , type="b" , xlab="probability of water" , ylab="posterior probability" )
+mtext( "50 points" )
+```

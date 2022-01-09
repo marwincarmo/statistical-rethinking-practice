@@ -124,4 +124,13 @@ curve( dbeta( x , W+1 , L+1 ) , lty=2 , add=TRUE )
 
 ### 2E1
 
-The probability of rain on monday = Pr(rain|Monday)
+Answers (2) and (4): The probability of rain on monday = Pr(rain|Monday) or Pr(rain, Monday)/Pr(Monday)
+
+### 2E2
+
+(3): Pr(Monday|rain) = The probability that it is Monday, given that it is raining.
+
+### 2E3
+
+Answers (1) and (5): the probability that it is Monday, given that it is raining
+Pr(Monday|rain) = Pr(rain|Monday)Pr(Monday)/Pr(rain)
