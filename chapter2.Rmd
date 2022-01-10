@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r packages, include=FALSE}
 library(rethinking)
+library(ggplot2)
 ```
 
 # Chapter 2 examples
@@ -138,4 +139,74 @@ Pr(Monday|rain) = Pr(rain|Monday)Pr(Monday)/Pr(rain)
 ## 2E4
 
 By stating that probability of water is 0.7 we're only making an informed guess about the true reality of nature. Probability does not exists because in the real world, things exist or they don't. The globe is covered by water in a "real" proportion but we can't know how much it is unless we measure all the land and all the water. Saying that 70% of the globe is water describes only our most plausible estimate given the data we have observed.
+
+## 2M1
+
+Recall the globe tossing model from the chapter. Compute and plot the grid approximate posterior distribution for each of the following sets of observations. In each case, assume a uniform prior for *p*
+
+```{r 2m1}
+
+model1 <- tibble::tibble(
+  p_grid = seq(from=0, to=1 , length.out=20 ),
+  prior = rep( 1 , 20 ),
+  likelihood_1 = dbinom(3 , size= 3, prob=p_grid ), # W, W, W
+  likelihood_2 = dbinom(3 , size= 4, prob=p_grid ), # W, W, W, L
+  likelihood_3 = dbinom(5 , size= 7, prob=p_grid )  # L, W, W, L, W, W, W
+) |> 
+  tidyr::pivot_longer(cols = dplyr::starts_with("likelihood"), values_to = "likelihood", names_to = "sequence") |> 
+  dplyr::mutate(
+    unstd.posterior = likelihood * prior,
+    posterior = unstd.posterior / sum(unstd.posterior)
+  )
+
+p_model1 <- ggplot(model1, aes(x = p_grid, y = posterior, group = sequence)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~ sequence)
+p_model1
+```
+
+
+## 2M2
+
+Now assume a prior for p that is equal to zero when p < 0.5 and is a positive constant when p ≥ 0.5. Again compute and plot the grid approximate posterior distribution for each of the sets of observations in the problem just above.
+
+```{r 2m2}
+model2 <- tibble::tibble(
+  p_grid = seq(from=0, to=1 , length.out=20 ),
+  prior = ifelse(p_grid < 0.5, 0, 1),
+  likelihood_1 = dbinom(3 , size= 3, prob=p_grid ),
+  likelihood_2 = dbinom(3 , size= 4, prob=p_grid ),
+  likelihood_3 = dbinom(5 , size= 7, prob=p_grid )
+) |> 
+  tidyr::pivot_longer(cols = dplyr::starts_with("likelihood"), values_to = "likelihood", names_to = "sequence") |> 
+  dplyr::mutate(
+    unstd.posterior = likelihood * prior,
+    posterior = unstd.posterior / sum(unstd.posterior)
+  )
+
+p_model2 <- ggplot(model2, aes(x = p_grid, y = posterior, group = sequence)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~ sequence)
+p_model2
+```
+## 2M3
+
+Suppose there are two globes, one for Earth and one for Mars. The Earth globe is 70% covered in water. The Mars globe is 100% land. Further suppose that one of these globes—you don’t know which—was tossed in the air and produced a "land" observation. Assume that each globe was equally likely to be tossed. Show that the posterior probability that the globe was the Earth, conditional on seeing "land" (Pr(Earth|land)), is 0.23.
+
+```{r 2m3}
+
+PLE <- 0.3 # Pr(Land|Earth)
+PLM <- 1.0 # Pr(Land|Mars)
+PE <- .5 # Pr(Earth)
+PM <- .5 # Pr(Mars)
+PL <- PLE * PE + PLM * PM
+
+PEL <- PLE * PE / PL
+
+```
+
+Pr(Earth|land) is equal to `r round(PEL, 2)`
+
 
