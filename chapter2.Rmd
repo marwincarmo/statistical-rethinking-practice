@@ -210,3 +210,72 @@ PEL <- PLE * PE / PL
 Pr(Earth|land) is equal to `r round(PEL, 2)`
 
 
+## 2M4
+
+```{r 2m4}
+C1 <- sum(c("B", "B") == "B")  # 2 black sides
+C2 <- sum(c("B", "W") == "B") # 1 black 1 white
+C3 <- sum(c("W", "W") == "B") # 2 white sides
+
+# ways to produce 1 black
+ways <- c(C1,C2,C3)
+plausibilities <- ways/sum(ways)
+```
+
+The only way to have a black side is if we have drawn C1. To confirm we can check if its plausibility is equal to 2/3: `plausibilities[1] == 2/3` returns `r plausibilities[1] == 2/3`
+
+## 2M5
+
+```{r 2m5b}
+# the only addition is a new card C4
+C4 <- sum(c("B", "B") == "B")
+
+ways_new <- c(C1,C2,C3, C4)
+plausibilities_new <- ways_new/sum(ways_new)
+```
+
+We just need to sum the ways consistent with drawing another black card: `plausibilities_new[1] + plausibilities_new[4]` which returns `r plausibilities_new[1] + plausibilities_new[4]`
+
+## 2M6
+
+```{r 2m6}
+
+C1_update <- C1 * 1
+C2_update <- C2 * 2
+C3_update <- C3 * 3
+
+# ways to produce 1 black
+ways <- c(C1_update,C2_update,C3_update)
+plausibilities <- ways/sum(ways)
+
+plausibilities[1]
+
+```
+
+## 2M7
+
+We can multiply each card chance of having produce the first draw (black) by the chances of the remaining cards of having produced the second draw (white):
+
+```{r 2m7}
+
+C1 <- c("B", "B")  # 2 black sides
+C2 <- c("B", "W") # 1 black 1 white
+C3 <- c("W", "W") # 2 white sides
+
+# first draw = 'black'
+C1_first <- sum(C1 == 'B')
+C2_first <- sum(C2 == 'B')
+C3_first <- sum(C3 == 'B')
+
+# second draw = 'white'
+C1_second <- C1_first * (sum(C2 == 'W') + sum(C3 == 'W'))
+C2_second <- C2_first * (sum(C1 == 'W') + sum(C3 == 'W'))
+C3_second <- C3_first * (sum(C1 == 'W') + sum(C2 == 'W'))
+
+ways <- c(C1_second, C2_second, C3_second)
+plausibilities <- ways/sum(ways)
+
+# new probability of the first card being B/B
+plausibilities[1]
+```
+
