@@ -1,0 +1,36 @@
+---
+title: 'Statistical Rethinking: A Bayesian Course with Examples in R and Stan'
+subtitle: 'Chapter 3: Sampling the Imaginary'
+author: "Marwin Carmo"
+date: "12/01/2022"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include=FALSE}
+library(rethinking)
+library(ggplot2)
+```
+
+## 3.1. Sampling from a grid-approximate posterior
+
+```{r 3.2}
+p_grid <- seq( from=0 , to=1 , length.out=1000 ) 
+prob_p <- rep( 1 , 1000 ) 
+prob_data <- dbinom( 6 , size=9 , prob=p_grid ) 
+posterior <- prob_data * prob_p 
+posterior <- posterior / sum(posterior)
+
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE )
+
+plot( samples )
+dens( samples )
+```
+
