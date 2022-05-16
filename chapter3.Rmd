@@ -180,3 +180,101 @@ w <- rbinom(1e4, size = 15, prob = samples)
 sum(w == 8)/length(w)
 ```
 
+### 3M4. Using the posterior distribution constructed from the new (8/15) data, now calculate the probability of observing 6 water in 9 tosses.
+
+```{r 3m4}
+w <- rbinom(1e4, size = 9, prob = samples)
+sum(w == 6)/length(w)
+```
+
+### 3M5. Start over at 3M1, but now use a prior that is zero below p = 0.5 and a constant above p = 0.5. This corresponds to prior information that a majority of the Earth’s surface is water. Repeat each problem above and compare the inferences. What difference does the better prior make? If it helps, compare inferences (using both priors) to the true value p = 0.7.
+
+```{r 3m5a}
+p_grid <- seq( from=0 , to=1 , length.out=1000 ) 
+prior <- ifelse( p_grid < 0.5 , 0 , 1 )
+likelihood <- dbinom( 8 , size=15 , prob=p_grid ) 
+posterior <- likelihood * prior 
+posterior <- posterior / sum(posterior)
+```
+
+90% HPDI for *p*
+
+```{r 3m5b}
+set.seed(100) 
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE )
+rethinking::HPDI(samples, 0.9)
+
+dat <- with(density(samples), data.frame(x, y))
+ggplot(data = dat, mapping = aes(x = x, y = y)) +
+    geom_line() +
+    geom_area(mapping = aes(x = ifelse(x > rethinking::HPDI(samples, 0.9)[[1]] & x < rethinking::HPDI(samples, 0.9)[[2]], x, 0)), fill = "red", alpha = 0.7) +
+    scale_y_continuous(limits = c(0, max(dat$y))) +
+    theme_bw(12) +
+    labs(y = "Density")
+```
+Probability of observing 8 water in 15 tosses
+
+```{r 3m5c}
+# simulate predictive observations for each p in samples
+w <- rbinom(1e4, size = 15, prob = samples)
+sum(w == 8)/length(w)
+```
+
+Probability of observing 6 water in 9 tosses
+
+```{r 3m5d}
+w <- rbinom(1e4, size = 9, prob = samples)
+sum(w == 6)/length(w)
+```
+
+Assigning a probability of 0 for values below 0.5 yields a narrower HDPI., with results closer to those obtained using the true value p = 0.7. 
+
+### 3M6. Suppose you want to estimate the Earth’s proportion of water very precisely. Specifically, you want the 99% percentile interval of the posterior distribution of p to be only 0.05 wide. This means the distance between the upper and lower bound of the interval should be 0.05. How many times will you have to toss the globe to do this?
+
+### 3H1
+
+```{r}
+library(rethinking)
+data(homeworkch3)
+sum(birth1) + sum(birth2)
+```
+
+Using grid approximation, compute the posterior distribution for the probability of a birth being a boy. Assume a uniform prior probability. Which parameter value maximizes the posterior probability?
+
+
+```{r 3h1}
+p_grid <- seq( from=0 , to=1 , length.out=1000 ) 
+prior <- rep(1, 1000)
+likelihood <- dbinom( sum(birth1) + sum(birth2) , size=200 , prob=p_grid ) 
+posterior <- likelihood * prior 
+posterior <- posterior / sum(posterior)
+
+p_grid[which.max(posterior)]
+```
+
+### 3H2. Using the sample function, draw 10,000 random parameter values from the posterior distribution you calculated above. Use these samples to estimate the 50%, 89%, and 97% highest posterior density intervals.
+
+```{r 3h2}
+samples <- sample(p_grid , prob=posterior , size=1e4 , replace=TRUE )
+
+purrr::map(c("50%" = .5,"89%" = .89, "97%" = .97), ~rethinking::HPDI(samples, prob = .x))
+
+```
+
+### 3H3. Use rbinom to simulate 10,000 replicates of 200 births. You should end up with 10,000 numbers, each one a count of boys out of 200 births. Compare the distribution of predicted numbers of boys to the actual count in the data (111 boys out of 200 births). There are many good ways to visualize the simulations, but the dens command (part of the rethinking package) is probably the easiest way in this case. Does it look like the model fits the data well? That is, does the distribution of predictions include the actual observation as a central, likely outcome?
+
+```{r 3h3}
+
+births <- rbinom(1e4, 200, prob = samples)
+
+dat <- with(density(births), data.frame(x, y))
+
+
+ggplot(dat, aes(x = x)) +
+  geom_line(aes(y = y), linetype = "solid", color = "#009FB7", size = 1.2) +
+  labs(x = "Boys", y = "Posterior Density") +
+  geom_vline(aes(xintercept = 111), linetype = "dashed", color = "red") +
+  theme_minimal()
+
+```
+

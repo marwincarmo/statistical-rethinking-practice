@@ -58,3 +58,33 @@ mtext( "50 points" )
 
 For the posterior distribution from 2, compute 89% percentile and HPDI intervals. Compare the widths of these intervals. Which is wider? Why? If you had only the information in the interval, what might you misunderstand about the shape of the posterior distribution?
 
+```{r ex03}
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE )
+# HDPI
+rethinking::HPDI(samples, .89)
+
+# PI
+rethinking::PI(samples, .89)
+
+```
+
+```{r}
+library(ggplot2)
+dat <- with(density(samples), data.frame(x, y))
+ggplot(data = dat, mapping = aes(x = x, y = y)) +
+    geom_line() +
+    geom_area(mapping = aes(x = ifelse(x > rethinking::HPDI(samples, 0.89)[[1]] & x < rethinking::HPDI(samples, 0.89)[[2]], x, 0)), fill = "red3", alpha = 0.5) +
+  geom_area(mapping = aes(x = ifelse(x > rethinking::PI(samples, 0.89)[[1]] & x < rethinking::PI(samples, 0.89)[[2]], x, 0)), fill = "dodgerblue3", alpha = 0.5) +
+    scale_y_continuous(limits = c(0, max(dat$y))) +
+    theme_bw(12) +
+    labs(y = "Density")
+```
+
+For the HDPI we have a width of `r rethinking::HPDI(samples, 0.89)[[2]] - rethinking::HPDI(samples, 0.89)[[1]]` and for PI a width of `r rethinking::PI(samples, 0.89)[[2]] - rethinking::PI(samples, 0.89)[[1]]`. From these results, we can conclude that the percentile intervals yielded a wider posterior interval. The HDPI tends to be narrower than the PI, especially for skewed distributions, because it takes the narrowest interval containing the specified probability mass. On the other hand, the PI takes the central specified interval.
+
+Having only information from the interval we are not able to gain knowledge about the tails of the distribution. We might think they're symmetric but in fact, a high skewness might be present.
+
+# 4. OPTIONAL CHALLENGE. 
+
+Suppose there is bias in sampling so that Land is more likely than Water to be recorded. Specifically, assume that 1-in-5 (20%) of Water samples are accidentally recorded instead as “Land.” First, write a generative simulation of this sampling process. Assuming the true proportion of Water is 0.70, what proportion does your simulation tend to produce instead? Second, using a simulated sample of 20 tosses, compute the unbiased posterior distribution of the true proportion of water.
+
