@@ -278,3 +278,34 @@ ggplot(dat, aes(x = x)) +
 
 ```
 
+### 3H4. Now compare 10,000 counts of boys from 100 simulated first borns only to the number of boys in the first births, `birth1`. How does the model look in this light?
+
+```{r 3h4}
+births1st <- rbinom(1e4, 100, prob = samples)
+
+dat <- with(density(births1st), data.frame(x, y))
+
+
+ggplot(dat, aes(x = x)) +
+  geom_line(aes(y = y), linetype = "solid", color = "#009FB7", size = 1.2) +
+  labs(x = "Boys first borns", y = "Posterior Density") +
+  geom_vline(aes(xintercept = 51), linetype = "dashed", color = "red") +
+  theme_minimal()
+
+```
+
+### 3H5. The model assumes that sex of first and second births are independent. To check this assumption, focus now on second births that followed female first borns. Compare 10,000 simulated counts of boys to only those second births that followed girls. To do this correctly, you need to count the number of first borns who were girls and simulate that many births, 10,000 times. Compare the counts of boys in your simulations to the actual observed count of boys following girls. How does the model look in this light? Any guesses what is going on in these data?
+
+```{r 3h5}
+boy2nd <- birth2[birth1==0]
+boy2ndsim <- rbinom(1e4, length(boy2nd), prob = samples)
+
+dat <- with(density(boy2ndsim), data.frame(x, y))
+
+ggplot(dat, aes(x = x)) +
+  geom_line(aes(y = y), linetype = "solid", color = "#009FB7", size = 1.2) +
+  labs(x = "Boys followed by girls", y = "Posterior Density") +
+  geom_vline(aes(xintercept = sum(boy2nd)), linetype = "dashed", color = "red") +
+  theme_minimal()
+```
+
