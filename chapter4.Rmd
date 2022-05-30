@@ -1,0 +1,251 @@
+---
+title: 'Statistical Rethinking: A Bayesian Course with Examples in R and Stan'
+subtitle: 'Chapter 4: Geocentric models'
+author: "Marwin Carmo"
+date: "12/01/2022"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+---
+
+```{r packages, include=FALSE}
+library(rethinking)
+library(ggplot2)
+library(dplyr)
+```
+
+## 4.1.1. Normal by addition
+
+```{r 4.1}
+pos <- replicate(1000, sum(runif(16,-1,1)))
+
+with(density(pos), data.frame(x, y)) |> 
+  ggplot(mapping = aes(x = x, y = y)) +
+    geom_line(colour = "darkblue", size=1.2) +
+    theme_bw(12) +
+    labs(y = "Density", x = "position", title = "16 steps")
+
+```
+
+## 4.1.2. Normal by multiplication
+
+```{r 4.3}
+growth <- replicate( 10000 , prod( 1 + runif(12,0,0.1) ) )
+dens( growth , norm.comp=TRUE )
+```
+## 4.1.3. Normal by log-multiplication
+
+Adding logs is equivalent to multiplying the original numbers.
+
+```{r 4.5}
+log.big <- replicate( 10000 , log(prod(1 + runif(12,0,0.5))) )
+dens(log.big, norm.comp = TRUE)
+```
+
+## 4.3. Gaussian model of height
+
+```{r 4.7}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+d2 <- d[ d$age >= 18 , ]
+```
+
+Average height prior
+
+```{r 4.12}
+curve(dnorm(x, 178, 20), from=100, to = 250, 
+      xlab = expression(mu), main = expression(paste(mu, " ~ Normal(178, 20)")))
+```
+
+Flat prior for $\sigma$
+
+```{r 4.13}
+curve(dunif(x, 0, 50), from=-10, to=60,
+      xlab = expression(sigma), main = expression(paste(sigma, " ~ Uniform(0, 50)")))
+```
+
+Simulating heights by sampling from the prior
+
+```{r 4.14}
+sample_mu <- rnorm( 1e4 , 178 , 20 )
+sample_sigma <- runif( 1e4 , 0 , 50 )
+prior_h <- rnorm( 1e4 , sample_mu , sample_sigma )
+dens( prior_h, xlab = "height", 
+      main = expression(paste(h, " ~ Normal(", mu, ",", sigma, ")")))
+```
+
+## 4.3.3. Grid approximation of the posterior distribution
+
+```{r 4.16}
+mu.list <- seq( from=150, to=160 , length.out=100 )
+sigma.list <- seq( from=7 , to=9 , length.out=100 )
+post <- expand.grid( mu=mu.list , sigma=sigma.list )
+post$LL <- sapply( 1:nrow(post) , function(i) sum(dnorm( d2$height , post$mu[i], 
+                                                         post$sigma[i] , log=TRUE ) ) )
+post$prod <- post$LL + dnorm( post$mu , 178 , 20 , TRUE ) +
+dunif( post$sigma , 0 , 50 , TRUE )
+post$prob <- exp( post$prod - max(post$prod) )
+```
+
+```{r}
+contour_xyz( post$mu , post$sigma , post$prob )
+image_xyz( post$mu , post$sigma , post$prob )
+```
+
+## 4.3.4. Sampling from the posterior
+
+```{r 4.19}
+sample.rows <- sample( 1:nrow(post) , size=1e4 , replace=TRUE ,prob=post$prob )
+sample.mu <- post$mu[ sample.rows ]
+sample.sigma <- post$sigma[ sample.rows ]
+
+plot( sample.mu , sample.sigma , cex=0.5 , pch=16 , col=col.alpha(rangi2,0.1) )
+```
+
+```{r}
+PI( sample.mu )
+PI( sample.sigma )
+```
+
+```{r}
+den <- density( sample.mu )
+plot(den, xlab= "sample.mu", main = NULL)
+
+l <- min(which(den$x >= PI( sample.mu )[[1]]))
+h <- max(which(den$x < PI( sample.mu )[[2]]))
+
+polygon(c(den$x[c(l, l:h, h)]),
+        c(0, den$y[l:h], 0),
+        col = "slateblue1")
+```
+```{r}
+den <- density( sample.sigma )
+plot(den, xlab= "sample.sigma", main = NULL)
+
+l <- min(which(den$x >= PI( sample.sigma )[[1]]))
+h <- max(which(den$x < PI( sample.sigma )[[2]]))
+
+polygon(c(den$x[c(l, l:h, h)]),
+        c(0, den$y[l:h], 0),
+        col = "slateblue1")
+```
+
+Overthinking: Sample size and the normality of $\sigma$’s posterior
+
+```{r 4.23}
+d3 <- sample( d2$height , size=20 )
+```
+
+```{r 4.24}
+mu.list <- seq( from=150, to=170 , length.out=200 )
+sigma.list <- seq( from=4 , to=20 , length.out=200 )
+post2 <- expand.grid( mu=mu.list , sigma=sigma.list )
+post2$LL <- sapply( 1:nrow(post2) , function(i)
+sum( dnorm( d3 , mean=post2$mu[i] , sd=post2$sigma[i] ,
+log=TRUE ) ) )
+post2$prod <- post2$LL + dnorm( post2$mu , 178 , 20 , TRUE ) +
+dunif( post2$sigma , 0 , 50 , TRUE )
+post2$prob <- exp( post2$prod - max(post2$prod) )
+sample2.rows <- sample( 1:nrow(post2) , size=1e4 , replace=TRUE ,
+prob=post2$prob )
+sample2.mu <- post2$mu[ sample2.rows ]
+sample2.sigma <- post2$sigma[ sample2.rows ]
+plot( sample2.mu , sample2.sigma , cex=0.5 ,
+col=col.alpha(rangi2,0.1) ,
+xlab="mu" , ylab="sigma" , pch=16 )
+dens( sample2.sigma , norm.comp=TRUE )
+```
+
+This code will also show a normal approximation with the same mean and variance. Now you can see that the posterior for σ is not Gaussian, but rather has a long tail towards higher values.
+
+## 4.3.5. Finding the posterior distribution with `quap`
+
+```{r 4.27}
+flist <- alist(height ~ dnorm( mu , sigma ) ,
+               mu ~ dnorm( 178 , 20 ) ,
+               sigma ~ dunif( 0 , 50 )
+)
+```
+
+```{r 4.28}
+m4.1 <- quap( flist , data=d2 )
+precis(m4.1)
+```
+
+Sampling vectors of values from a multi-dimensional Gaussian distribution
+
+```{r}
+post <- extract.samples( m4.1 , n=1e4 )
+head(post)
+precis(post)
+```
+
+## 4.4. Linear prediction
+
+```{r 4.37}
+plot( d2$height ~ d2$weight , main = "Height x Weight")
+```
+
+### 4.4.1.3. Priors
+
+```{r 4.38}
+set.seed(2971)
+N <- 100 # 100 lines
+a <- rnorm( N , 178 , 20 )
+b <- rnorm( N , 0 , 10 )
+```
+
+```{r}
+plot( NULL , xlim=range(d2$weight) , ylim=c(-100,400) , xlab="weight" , ylab="height" )
+abline( h=0 , lty=2 )
+abline( h=272 , lty=1 , lwd=0.5 )
+mtext( "b ~ dnorm(0,10)" )
+xbar <- mean(d2$weight)
+for ( i in 1:N ) curve( a[i] + b[i]*(x - xbar) ,
+                        from=min(d2$weight) , to=max(d2$weight) , add=TRUE , 
+                        col=col.alpha("black",0.2) )
+```
+
+$$
+\beta \sim LogNormal(0,1)
+$$
+
+```{r}
+b <- rlnorm( 1e4 , 0 , 1 )
+dens( b , xlim=c(0,5) , adj=0.1 )
+```
+
+```{r 4.41}
+set.seed(2971)
+N <- 100
+# 100 lines
+a <- rnorm( N , 178 , 20 )
+b <- rlnorm( N , 0 , 1 )
+
+plot( NULL , xlim=range(d2$weight) , ylim=c(-100,400) , xlab="weight" , ylab="height" )
+abline( h=0 , lty=2 )
+abline( h=272 , lty=1 , lwd=0.5 )
+mtext( "b ~ dnorm(0,10)" )
+xbar <- mean(d2$weight)
+for ( i in 1:N ) curve( a[i] + b[i]*(x - xbar) ,
+                        from=min(d2$weight) , to=max(d2$weight) , add=TRUE , 
+                        col=col.alpha("black",0.2) )
+```
+## 4.4.2. Finding the posterior distribution
+
+```{r 4.42}
+# define the average weight, x-bar
+xbar <- mean(d2$weight)
+
+# fit model
+m4.3 <- quap(alist(height ~ dnorm( mu , sigma ) ,
+                   mu <- a + b*( weight - xbar ) ,
+                   a ~ dnorm( 178 , 20 ) ,
+                   b ~ dlnorm( 0 , 1 ) ,
+                   sigma ~ dunif( 0 , 50 )) ,
+             data=d2 )
+```
+
